@@ -1,0 +1,5 @@
+name: vcenteremu
+description: vCenter emulator for demos and labs
+sourceType: kustomize
+path: deploy/operator
+defaultRef: main

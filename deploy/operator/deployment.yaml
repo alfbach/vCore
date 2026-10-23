@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vcenteremu
+  labels:
+    app: vcenteremu
+    app.kubernetes.io/name: vcenteremu
+    app.kubernetes.io/managed-by: alfslab-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vcenteremu
+  template:
+    metadata:
+      labels:
+        app: vcenteremu
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: quay.io/abach/vcenteremu:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8181
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
