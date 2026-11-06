@@ -34,18 +34,21 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def reject_weak_password_on_network_bind(self) -> "Settings":
+        self.validate_api_password(self.api_password)
+        return self
+
+    def validate_api_password(self, password: str) -> None:
         if self.allow_weak_password:
-            return self
+            return
         loopback_hosts = {"127.0.0.1", "::1", "localhost"}
         known_defaults = {"emulator123!", "password", "changeme"}
         if self.host not in loopback_hosts and (
-            len(self.api_password) < 12 or self.api_password.lower() in known_defaults
+            len(password) < 12 or password.lower() in known_defaults
         ):
             raise ValueError(
                 "VCENTEREMU_API_PASSWORD must be at least 12 characters and non-default "
                 "when VCENTEREMU_HOST is not loopback"
             )
-        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

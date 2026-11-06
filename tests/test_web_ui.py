@@ -94,6 +94,93 @@ def test_upload_requires_login():
     assert response.status_code == 401
 
 
+def test_change_password_requires_login():
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    response = TestClient(create_app()).post(
+        "/change-password",
+        data={
+            "current_password": "old",
+            "new_password": "new-password-123",
+            "confirm_password": "new-password-123",
+        },
+    )
+    assert response.status_code == 401
+
+
+def test_change_password_persists_and_invalidates_sessions(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.auth.password_store import PASSWORD_OVERRIDE_FILENAME, load_password_override
+    from app.auth.session_manager import session_manager
+    from app.config import get_settings
+    from app.main import create_app
+
+    import asyncio
+
+    settings = get_settings()
+    original_upload_dir = settings.upload_dir
+    original_password = settings.api_password
+    settings.upload_dir = str(tmp_path)
+    try:
+        client = TestClient(create_app())
+        login = client.post(
+            "/login",
+            data={"username": settings.api_username, "password": original_password},
+            follow_redirects=False,
+        )
+        assert login.status_code == 303
+
+        mismatch = client.post(
+            "/change-password",
+            data={
+                "current_password": original_password,
+                "new_password": "new-password-123",
+                "confirm_password": "different-password",
+            },
+        )
+        assert mismatch.status_code == 400
+
+        changed = client.post(
+            "/change-password",
+            data={
+                "current_password": original_password,
+                "new_password": "new-password-123",
+                "confirm_password": "new-password-123",
+            },
+            follow_redirects=False,
+        )
+        assert changed.status_code == 303
+        assert changed.headers["location"] == "/?password_changed=1"
+        override = tmp_path / PASSWORD_OVERRIDE_FILENAME
+        assert override.read_text(encoding="utf-8").strip() == "new-password-123"
+        assert override.stat().st_mode & 0o777 == 0o600
+
+        settings.api_password = original_password
+        assert load_password_override(settings) is True
+        assert settings.api_password == "new-password-123"
+
+        assert client.get("/").status_code == 200
+        old_login = client.post(
+            "/login",
+            data={"username": settings.api_username, "password": original_password},
+            follow_redirects=False,
+        )
+        assert old_login.status_code == 401
+        new_login = client.post(
+            "/login",
+            data={"username": settings.api_username, "password": "new-password-123"},
+            follow_redirects=False,
+        )
+        assert new_login.status_code == 303
+    finally:
+        settings.upload_dir = original_upload_dir
+        settings.api_password = original_password
+        asyncio.run(session_manager.clear())
+
+
 def test_login_upload_sanitizes_filename_and_logout(tmp_path):
     from fastapi.testclient import TestClient
 

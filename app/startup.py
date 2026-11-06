@@ -3,11 +3,18 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from app.auth.password_store import load_password_override
 from app.config import get_settings
 from app.parser.rvtools import parse_rvtools_xlsx
 from app.store.inventory_store import inventory_store
 
 logger = logging.getLogger(__name__)
+
+
+async def bootstrap_password_override() -> None:
+    settings = get_settings()
+    if load_password_override(settings):
+        logger.info("Loaded API password override from persistent storage")
 
 
 async def bootstrap_inventory() -> None:

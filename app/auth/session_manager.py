@@ -56,6 +56,10 @@ class SessionManager:
         async with self._lock:
             self._sessions.pop(token, None)
 
+    async def clear(self) -> None:
+        async with self._lock:
+            self._sessions.clear()
+
     def _purge_expired_locked(self, now: float) -> None:
         expired = [token for token, session in self._sessions.items() if session.expires_at <= now]
         for token in expired:

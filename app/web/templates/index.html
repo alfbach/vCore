@@ -43,6 +43,12 @@
     </div>
     {% endif %}
 
+    {% if password_changed %}
+    <div class="banner" role="status">
+      <strong class="ok">{{ t.password_changed }}</strong>
+    </div>
+    {% endif %}
+
     <div class="grid">
       <section class="card">
         {% if authenticated %}
@@ -53,6 +59,20 @@
           <button type="submit">{{ t.upload_button }}</button>
         </form>
         <p class="muted">{{ t.upload_note }}</p>
+        <hr>
+        <h2>{{ t.change_password_heading }}</h2>
+        {% if password_change_error == "current" %}<p class="alert" role="alert">{{ t.password_current_error }}</p>{% endif %}
+        {% if password_change_error == "mismatch" %}<p class="alert" role="alert">{{ t.password_mismatch_error }}</p>{% endif %}
+        {% if password_change_error == "policy" %}<p class="alert" role="alert">{{ t.password_policy_error }}</p>{% endif %}
+        <form action="/change-password" method="post">
+          <label for="current-password">{{ t.current_password }}</label>
+          <input id="current-password" name="current_password" type="password" autocomplete="current-password" required>
+          <label for="new-password">{{ t.new_password }}</label>
+          <input id="new-password" name="new_password" type="password" autocomplete="new-password" required>
+          <label for="confirm-password">{{ t.confirm_password }}</label>
+          <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" required>
+          <button type="submit">{{ t.change_password_button }}</button>
+        </form>
         {% else %}
         <h2>{{ t.admin_heading }}</h2>
         <p class="muted">{{ t.login_note }}</p>

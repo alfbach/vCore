@@ -21,6 +21,15 @@ TRANSLATIONS: dict[str, dict[str, Any]] = {
         "sign_in": "Sign in",
         "sign_out": "Sign out",
         "login_error": "The username or password is incorrect.",
+        "change_password_heading": "Change password",
+        "current_password": "Current password",
+        "new_password": "New password",
+        "confirm_password": "Confirm new password",
+        "change_password_button": "Change password",
+        "password_changed": "Password changed. Sign in again with the new password.",
+        "password_current_error": "The current password is incorrect.",
+        "password_mismatch_error": "The new passwords do not match.",
+        "password_policy_error": "The new password does not meet the configured password policy.",
         "upload_note": (
             "Multiple users can access the same emulated vCenter instance in parallel. "
             "A new upload replaces the current inventory for all clients."
@@ -89,6 +98,15 @@ TRANSLATIONS: dict[str, dict[str, Any]] = {
         "sign_in": "Anmelden",
         "sign_out": "Abmelden",
         "login_error": "Benutzername oder Passwort ist falsch.",
+        "change_password_heading": "Passwort ändern",
+        "current_password": "Aktuelles Passwort",
+        "new_password": "Neues Passwort",
+        "confirm_password": "Neues Passwort bestätigen",
+        "change_password_button": "Passwort ändern",
+        "password_changed": "Passwort geändert. Bitte mit dem neuen Passwort erneut anmelden.",
+        "password_current_error": "Das aktuelle Passwort ist falsch.",
+        "password_mismatch_error": "Die neuen Passwörter stimmen nicht überein.",
+        "password_policy_error": "Das neue Passwort erfüllt die konfigurierte Passwortrichtlinie nicht.",
         "upload_note": (
             "Mehrere Benutzer können parallel auf dieselbe emulierte vCenter-Instanz zugreifen. "
             "Ein neuer Upload ersetzt das aktuelle Inventar für alle Clients."

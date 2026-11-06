@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import secrets
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -18,6 +19,7 @@ from app.auth.session_manager import (
     session_manager,
     verify_basic_credentials,
 )
+from app.auth.password_store import save_password_override
 from app.config import get_settings
 from app.parser.rvtools import parse_rvtools_xlsx
 from app.store.inventory_store import inventory_store
@@ -105,6 +107,7 @@ async def dashboard(request: Request) -> HTMLResponse:
         inventory=inventory,
         authenticated=session_token is not None,
         session_token=session_token,
+        password_changed=request.query_params.get("password_changed") == "1",
     )
     return templates.TemplateResponse(request, "index.html", context)
 
@@ -143,6 +146,47 @@ async def login(
         secure=_public_base_url(request).startswith("https://"),
         samesite="lax",
     )
+    return response
+
+
+@router.post("/change-password", response_class=HTMLResponse)
+async def change_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    _: Session = Depends(require_session),
+) -> HTMLResponse:
+    settings = get_settings()
+    error: str | None = None
+    if not secrets.compare_digest(current_password, settings.api_password):
+        error = "current"
+    elif new_password != confirm_password:
+        error = "mismatch"
+    else:
+        try:
+            settings.validate_api_password(new_password)
+        except ValueError:
+            error = "policy"
+
+    if error:
+        inventory = await inventory_store.get()
+        context = _template_context(
+            request,
+            inventory=inventory,
+            authenticated=True,
+            session_token=request.cookies.get(SESSION_COOKIE),
+            password_change_error=error,
+        )
+        return templates.TemplateResponse(
+            request, "index.html", context, status_code=400
+        )
+
+    await asyncio.to_thread(save_password_override, settings, new_password)
+    settings.api_password = new_password
+    await session_manager.clear()
+    response = RedirectResponse(url="/?password_changed=1", status_code=303)
+    response.delete_cookie(SESSION_COOKIE, httponly=True, samesite="lax")
     return response
 
 

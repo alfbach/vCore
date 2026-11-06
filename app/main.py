@@ -12,12 +12,13 @@ from fastapi.staticfiles import StaticFiles
 from app import __version__
 from app.api import appliance, cluster, datastore, datacenter, folder, host, network, resource_pool, session, vm
 from app.config import get_settings
-from app.startup import bootstrap_inventory
+from app.startup import bootstrap_inventory, bootstrap_password_override
 from app.web.routes import router as web_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await bootstrap_password_override()
     await bootstrap_inventory()
     yield
 
