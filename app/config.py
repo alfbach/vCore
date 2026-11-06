@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     workers: int = 1
     api_username: str = "administrator@vsphere.local"
     api_password: str = "Emulator123!"
+    allow_weak_password: bool = False
     upload_dir: str = "/var/lib/vcenteremu/uploads"
     max_upload_mb: int = 256
     vcenter_name: str = "vcenteremu.local"
@@ -33,6 +34,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def reject_weak_password_on_network_bind(self) -> "Settings":
+        if self.allow_weak_password:
+            return self
         loopback_hosts = {"127.0.0.1", "::1", "localhost"}
         known_defaults = {"emulator123!", "password", "changeme"}
         if self.host not in loopback_hosts and (

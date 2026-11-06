@@ -19,3 +19,13 @@ def test_weak_password_is_rejected_on_network_bind():
 def test_weak_password_is_allowed_for_loopback_development():
     settings = Settings(host="127.0.0.1", api_password="password", _env_file=None)
     assert settings.api_password == "password"
+
+
+def test_weak_password_requires_explicit_opt_in_on_network_bind():
+    settings = Settings(
+        host="0.0.0.0",
+        api_password="password",
+        allow_weak_password=True,
+        _env_file=None,
+    )
+    assert settings.api_password == "password"
