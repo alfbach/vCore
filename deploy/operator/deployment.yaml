@@ -16,6 +16,10 @@ spec:
       labels:
         app: vcenteremu
     spec:
+      # Kubernetes service-link variables use the service name as their prefix.
+      # A service named "vcenteremu" would otherwise inject VCENTEREMU_PORT as
+      # a tcp:// URL and override the application's integer port setting.
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         seccompProfile:
@@ -24,6 +28,16 @@ spec:
         - name: app
           image: quay.io/abach/vcenteremu:latest
           imagePullPolicy: Always
+          env:
+            - name: VCENTEREMU_HOST
+              value: "0.0.0.0"
+            - name: VCENTEREMU_PORT
+              value: "8181"
+            - name: VCENTEREMU_API_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vcenteremu-secret
+                  key: VCENTEREMU_API_PASSWORD
           ports:
             - name: http
               containerPort: 8181
