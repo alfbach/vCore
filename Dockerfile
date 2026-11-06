@@ -12,9 +12,7 @@ WORKDIR /opt/app
 COPY requirements.txt pyproject.toml README.md ./
 COPY app ./app
 
-RUN dnf update -y && \
-    dnf clean all && \
-    pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir . && \
     mkdir -p /var/lib/vcenteremu/uploads && \
