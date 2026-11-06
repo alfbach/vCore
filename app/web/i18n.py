@@ -14,6 +14,13 @@ TRANSLATIONS: dict[str, dict[str, Any]] = {
         "upload_heading": "Upload RVtools export",
         "upload_label": "RVtools export (.xlsx / .xlsm, e.g. ExportAll2xlsx)",
         "upload_button": "Load inventory",
+        "admin_heading": "Administrator access",
+        "login_note": "Sign in to upload or replace the shared inventory.",
+        "username": "Username",
+        "password": "Password",
+        "sign_in": "Sign in",
+        "sign_out": "Sign out",
+        "login_error": "The username or password is incorrect.",
         "upload_note": (
             "Multiple users can access the same emulated vCenter instance in parallel. "
             "A new upload replaces the current inventory for all clients."
@@ -28,6 +35,9 @@ TRANSLATIONS: dict[str, dict[str, Any]] = {
         "api_base_url": "Base URL",
         "api_user": "Username",
         "api_password": "Password",
+        "api_password_hidden": "Not displayed",
+        "api_session_token": "Active token",
+        "api_secret_login": "Sign in to reveal",
         "api_session_header": "Session header",
         "api_health": "Health",
         "tls_heading": "TLS / production",
@@ -72,6 +82,13 @@ TRANSLATIONS: dict[str, dict[str, Any]] = {
         "upload_heading": "RVtools Export hochladen",
         "upload_label": "RVtools Export (.xlsx / .xlsm, z. B. ExportAll2xlsx)",
         "upload_button": "Inventar laden",
+        "admin_heading": "Administrator-Zugang",
+        "login_note": "Anmelden, um das gemeinsame Inventar hochzuladen oder zu ersetzen.",
+        "username": "Benutzername",
+        "password": "Passwort",
+        "sign_in": "Anmelden",
+        "sign_out": "Abmelden",
+        "login_error": "Benutzername oder Passwort ist falsch.",
         "upload_note": (
             "Mehrere Benutzer können parallel auf dieselbe emulierte vCenter-Instanz zugreifen. "
             "Ein neuer Upload ersetzt das aktuelle Inventar für alle Clients."
@@ -86,6 +103,9 @@ TRANSLATIONS: dict[str, dict[str, Any]] = {
         "api_base_url": "Basis-URL",
         "api_user": "Benutzer",
         "api_password": "Passwort",
+        "api_password_hidden": "Nicht angezeigt",
+        "api_session_token": "Aktiver Token",
+        "api_secret_login": "Zum Anzeigen anmelden",
         "api_session_header": "Session-Header",
         "api_health": "Health",
         "tls_heading": "TLS / Produktion",

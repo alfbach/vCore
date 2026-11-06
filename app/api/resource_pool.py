@@ -10,7 +10,7 @@ router = APIRouter(prefix="/vcenter", tags=["resource-pool"])
 
 @router.get("/resource-pool")
 async def list_resource_pools(_: Session = Depends(require_session)) -> list[dict]:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     if not inventory.is_loaded:
         raise HTTPException(status_code=503, detail="No inventory loaded")
     return [
@@ -29,7 +29,7 @@ async def get_resource_pool(
     resource_pool_id: str,
     _: Session = Depends(require_session),
 ) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     pool = next(
         (item for item in inventory.resource_pools.values() if item.resource_pool_id == resource_pool_id),
         None,

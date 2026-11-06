@@ -25,12 +25,40 @@ class InventoryStore:
     async def snapshot(self) -> Inventory:
         return await self.get()
 
+    async def view(self) -> Inventory:
+        """Return the current inventory for an immediate read-only request path.
+
+        API handlers do not await again while reading this object, so returning the
+        current immutable-by-convention snapshot avoids copying large inventories.
+        Replacements swap the object rather than mutating it.
+        """
+        async with self._lock:
+            return self._inventory
+
     async def update_vm_power(self, vm_id: str, power_state: str) -> VMRecord:
         async with self._lock:
             vm = self._inventory.vms.get(vm_id)
             if vm is None:
                 raise KeyError(vm_id)
             vm.power_state = power_state
+            return deepcopy(vm)
+
+    async def transition_vm_power(
+        self,
+        vm_id: str,
+        target_state: str,
+        allowed_from: set[str],
+    ) -> VMRecord:
+        """Atomically validate and apply a VM power-state transition."""
+        async with self._lock:
+            if not self._inventory.is_loaded:
+                raise RuntimeError("inventory not loaded")
+            vm = self._inventory.vms.get(vm_id)
+            if vm is None:
+                raise KeyError(vm_id)
+            if vm.power_state not in allowed_from:
+                raise ValueError(vm.power_state)
+            vm.power_state = target_state
             return deepcopy(vm)
 
     async def update_vm_annotation(self, vm_id: str, annotation: str) -> VMRecord:

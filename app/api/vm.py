@@ -79,7 +79,7 @@ def _vm_detail(inventory, vm_id: str, vm) -> dict:
 
 @router.get("/vm")
 async def list_vms(_: Session = Depends(require_session)) -> list[dict]:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     _require_inventory_loaded(inventory)
     return [
         {
@@ -95,7 +95,7 @@ async def list_vms(_: Session = Depends(require_session)) -> list[dict]:
 
 @router.get("/vm/{vm_id}")
 async def get_vm(vm_id: str, _: Session = Depends(require_session)) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     _require_inventory_loaded(inventory)
     vm = _get_vm_or_404(inventory, vm_id)
     return _vm_detail(inventory, vm_id, vm)
@@ -111,7 +111,7 @@ async def update_vm(
     body: VMAnnotationUpdate,
     _: Session = Depends(require_session),
 ) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     _require_inventory_loaded(inventory)
     _get_vm_or_404(inventory, vm_id)
     try:
@@ -123,7 +123,7 @@ async def update_vm(
 
 @router.get("/vm/{vm_id}/guest/identity")
 async def get_vm_guest_identity(vm_id: str, _: Session = Depends(require_session)) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     _require_inventory_loaded(inventory)
     vm = _get_vm_or_404(inventory, vm_id)
     family = "WINDOWS" if "windows" in vm.guest_os.lower() else "LINUX"
@@ -139,7 +139,7 @@ async def get_vm_guest_identity(vm_id: str, _: Session = Depends(require_session
 
 @router.get("/vm/{vm_id}/guest/networking")
 async def get_vm_guest_networking(vm_id: str, _: Session = Depends(require_session)) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     _require_inventory_loaded(inventory)
     _get_vm_or_404(inventory, vm_id)
     nics = inventory.vm_nics.get(vm_id, [])
@@ -158,18 +158,21 @@ async def get_vm_guest_networking(vm_id: str, _: Session = Depends(require_sessi
 
 
 async def _power_action(vm_id: str, target_state: str, allowed_from: set[str]) -> None:
-    inventory = await inventory_store.get()
-    _require_inventory_loaded(inventory)
-    vm = _get_vm_or_404(inventory, vm_id)
-    if vm.power_state not in allowed_from:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cannot change power state from {vm.power_state} to {target_state}",
-        )
     try:
-        await inventory_store.update_vm_power(vm_id, target_state)
+        await inventory_store.transition_vm_power(vm_id, target_state, allowed_from)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No RVtools inventory loaded. Upload an XLSX file via the web UI.",
+        ) from exc
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Virtual machine not found") from exc
+    except ValueError as exc:
+        current_state = str(exc)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot change power state from {current_state} to {target_state}",
+        ) from exc
 
 
 @router.post("/vm/{vm_id}/power/start", status_code=200)
@@ -189,9 +192,4 @@ async def power_suspend(vm_id: str, _: Session = Depends(require_session)) -> No
 
 @router.post("/vm/{vm_id}/power/reset", status_code=200)
 async def power_reset(vm_id: str, _: Session = Depends(require_session)) -> None:
-    inventory = await inventory_store.get()
-    _require_inventory_loaded(inventory)
-    vm = _get_vm_or_404(inventory, vm_id)
-    if vm.power_state != "POWERED_ON":
-        raise HTTPException(status_code=400, detail="VM must be powered on to reset")
-    await inventory_store.update_vm_power(vm_id, "POWERED_ON")
+    await _power_action(vm_id, "POWERED_ON", {"POWERED_ON"})

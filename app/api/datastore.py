@@ -10,7 +10,7 @@ router = APIRouter(prefix="/vcenter", tags=["datastore"])
 
 @router.get("/datastore")
 async def list_datastores(_: Session = Depends(require_session)) -> list[dict]:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     if not inventory.is_loaded:
         raise HTTPException(status_code=503, detail="No inventory loaded")
     return [
@@ -27,7 +27,7 @@ async def list_datastores(_: Session = Depends(require_session)) -> list[dict]:
 
 @router.get("/datastore/{datastore_id}")
 async def get_datastore(datastore_id: str, _: Session = Depends(require_session)) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     ds = inventory.datastores.get(datastore_id)
     if ds is None:
         raise HTTPException(status_code=404, detail="Datastore not found")

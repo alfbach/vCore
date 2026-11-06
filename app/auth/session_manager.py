@@ -75,10 +75,9 @@ def verify_basic_credentials(
             detail="Authentication required",
             headers={"WWW-Authenticate": "Basic realm=\"vCenter Emulator\""},
         )
-    if (
-        credentials.username != settings.api_username
-        or credentials.password != settings.api_password
-    ):
+    username_ok = secrets.compare_digest(credentials.username, settings.api_username)
+    password_ok = secrets.compare_digest(credentials.password, settings.api_password)
+    if not (username_ok and password_ok):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -91,7 +90,9 @@ async def require_session(
     request: Request,
     settings: Settings = Depends(get_settings),
 ) -> Session:
-    token = request.headers.get("vmware-api-session-id")
+    token = request.headers.get("vmware-api-session-id") or request.cookies.get(
+        "vcenteremu_session"
+    )
     session = await session_manager.validate(token)
     if session:
         return session

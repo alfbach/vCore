@@ -30,12 +30,24 @@ def create_app() -> FastAPI:
         version=__version__,
         lifespan=lifespan,
     )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    if settings.cors_origin_list:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origin_list,
+            allow_methods=["GET", "POST", "PATCH", "DELETE"],
+            allow_headers=["Authorization", "Content-Type", "vmware-api-session-id"],
+        )
+
+    @app.middleware("http")
+    async def add_security_headers(request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+        )
+        return response
 
     rest = FastAPI(title="vCenter REST API")
     rest.include_router(session.router)

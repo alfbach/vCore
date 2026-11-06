@@ -2,6 +2,7 @@ from io import BytesIO
 
 from openpyxl import Workbook
 
+from app.config import get_settings
 from app.parser.rvtools import parse_rvtools_xlsx
 
 
@@ -69,7 +70,7 @@ def test_api_session_and_vm_list():
 
     session_resp = client.post(
         "/rest/com/vmware/cis/session",
-        auth=("administrator@vsphere.local", "Emulator123!"),
+        auth=(get_settings().api_username, get_settings().api_password),
     )
     assert session_resp.status_code == 200
     token = session_resp.json()
@@ -97,7 +98,7 @@ def test_power_on_simulation():
 
     token = client.post(
         "/rest/com/vmware/cis/session",
-        auth=("administrator@vsphere.local", "Emulator123!"),
+        auth=(get_settings().api_username, get_settings().api_password),
     ).json()
 
     headers = {"vmware-api-session-id": token}
@@ -127,7 +128,7 @@ def test_host_maintenance_and_extra_endpoints():
 
     token = client.post(
         "/rest/com/vmware/cis/session",
-        auth=("administrator@vsphere.local", "Emulator123!"),
+        auth=(get_settings().api_username, get_settings().api_password),
     ).json()
     headers = {"vmware-api-session-id": token}
 
@@ -142,4 +143,32 @@ def test_host_maintenance_and_extra_endpoints():
     )
     assert guest_resp.status_code == 200
     assert "value" in guest_resp.json()
+
+
+def test_delete_session_invalidates_header_token():
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.store.inventory_store import inventory_store
+
+    import asyncio
+
+    asyncio.run(inventory_store.replace(parse_rvtools_xlsx(_build_sample_workbook())))
+    client = TestClient(create_app())
+    token = client.post(
+        "/rest/com/vmware/cis/session",
+        auth=(get_settings().api_username, get_settings().api_password),
+    ).json()
+    headers = {"vmware-api-session-id": token}
+
+    assert client.delete("/rest/com/vmware/cis/session", headers=headers).status_code == 200
+    assert client.get("/rest/vcenter/vm", headers=headers).status_code == 401
+
+
+def test_scoped_ids_do_not_collide_after_slug_normalization():
+    from app.models.inventory import VMRecord
+
+    first = VMRecord(name="web 01", datacenter="DC1", uuid="uuid-1")
+    second = VMRecord(name="web-01", datacenter="DC1", uuid="uuid-2")
+    assert first.vm_id != second.vm_id
 

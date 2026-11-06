@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.security import HTTPBasicCredentials
 
 from app.auth.session_manager import (
@@ -25,10 +25,10 @@ async def create_session(
 
 @router.delete("/com/vmware/cis/session")
 async def delete_session(
-    credentials: HTTPBasicCredentials | None = Depends(security),
-    settings: Settings = Depends(get_settings),
+    request: Request,
 ) -> None:
-    verify_basic_credentials(credentials, settings)
-    if credentials is not None:
-        token = credentials.password
+    token = request.headers.get("vmware-api-session-id") or request.cookies.get(
+        "vcenteremu_session"
+    )
+    if token:
         await session_manager.delete(token)

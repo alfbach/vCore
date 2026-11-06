@@ -3,194 +3,68 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>{{ t.title }}</title>
-  <style>
-    :root {
-      --bg: #0f1419;
-      --panel: #1a2332;
-      --accent: #0091da;
-      --accent-soft: #1f6fae;
-      --text: #e8eef5;
-      --muted: #9fb0c3;
-      --ok: #3ddc97;
-      --border: #2a3a50;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background: linear-gradient(160deg, #0b1118, #152033 55%, #0f1419);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 3rem; position: relative; }
-    .page-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 1.25rem;
-      margin-bottom: 2rem;
-      padding-right: 4.5rem;
-    }
-    .header-logo-wrap {
-      flex-shrink: 0;
-      display: flex;
-      align-items: flex-start;
-    }
-    .header-main {
-      flex: 1;
-      min-width: 0;
-    }
-    .header-text { min-width: 0; }
-    h1 { margin: 0 0 .35rem; font-size: 1.9rem; line-height: 1.2; }
-    .subtitle { color: var(--muted); margin: 0; }
-    .header-logo {
-      max-height: 4.5rem;
-      max-width: 160px;
-      width: auto;
-      height: auto;
-      object-fit: contain;
-      display: block;
-    }
-    .lang-switch {
-      position: absolute;
-      top: 2rem;
-      right: 1.25rem;
-      display: inline-flex;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      background: #101722;
-      z-index: 1;
-    }
-    .lang-switch a {
-      padding: .35rem .65rem;
-      font-size: .78rem;
-      font-weight: 600;
-      text-decoration: none;
-      color: var(--muted);
-      letter-spacing: .03em;
-    }
-    .lang-switch a:hover { color: var(--text); background: #182232; }
-    .lang-switch a.active {
-      color: #fff;
-      background: var(--accent);
-    }
-    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-    .card {
-      background: rgba(26, 35, 50, 0.92);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.25rem;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
-    .card h2 { margin-top: 0; font-size: 1.05rem; color: #fff; }
-    label { display: block; margin-bottom: .5rem; color: var(--muted); font-size: .92rem; }
-    input[type=file] {
-      width: 100%;
-      padding: .75rem;
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      background: #101722;
-      color: var(--text);
-    }
-    button {
-      margin-top: .85rem;
-      background: var(--accent);
-      color: white;
-      border: 0;
-      border-radius: 10px;
-      padding: .75rem 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button:hover { background: var(--accent-soft); }
-    .stats { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; }
-    .stat {
-      background: #101722;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: .65rem .85rem;
-      min-width: 110px;
-    }
-    .stat strong { display: block; font-size: 1.25rem; }
-    .stat span { color: var(--muted); font-size: .85rem; }
-    code, pre {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: .86rem;
-    }
-    pre {
-      background: #101722;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: .85rem;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .ok { color: var(--ok); }
-    .muted { color: var(--muted); }
-    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    th, td { text-align: left; padding: .55rem .35rem; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-weight: 600; }
-    .banner {
-      margin-bottom: 1rem;
-      padding: .85rem 1rem;
-      border-radius: 10px;
-      background: rgba(61, 220, 151, 0.12);
-      border: 1px solid rgba(61, 220, 151, 0.35);
-    }
-    .endpoint { margin-bottom: .75rem; }
-    .method {
-      display: inline-block;
-      min-width: 3.2rem;
-      padding: .15rem .45rem;
-      border-radius: 6px;
-      background: #243247;
-      color: #9fd4ff;
-      font-weight: 700;
-      font-size: .75rem;
-    }
-    @media (max-width: 640px) {
-      .page-header { flex-wrap: wrap; padding-right: 0; padding-top: 2.5rem; }
-      .header-main { width: 100%; }
-      .lang-switch { top: 2rem; right: 1.25rem; }
-      .header-logo { max-height: 3rem; max-width: 120px; }
-    }
-  </style>
+  <link rel="icon" href="/static/alfslab-logo.png" type="image/png">
+  <link rel="stylesheet" href="/static/alfslab.css">
 </head>
 <body>
-  <div class="wrap">
-    <nav class="lang-switch" aria-label="{{ t.lang_label }}">
-      <a href="/language/en" class="{% if locale == 'en' %}active{% endif %}">EN</a>
-      <a href="/language/de" class="{% if locale == 'de' %}active{% endif %}">DE</a>
-    </nav>
-    <header class="page-header">
-      <div class="header-logo-wrap">
-        <img src="/static/logo.png" alt="{{ t.title }}" class="header-logo">
+  <header class="masthead">
+    <div class="brand">
+      <img src="/static/alfslab-logo.png" alt="Alfslab" class="brand-logo">
+      <div class="product-name">
+        <strong>{{ t.title }}</strong>
+        <span>RVtools-powered API lab</span>
       </div>
-      <div class="header-main">
-        <div class="header-text">
-          <h1>{{ t.title }}</h1>
-          <p class="subtitle">{{ t.subtitle }}</p>
-        </div>
-      </div>
-    </header>
+    </div>
+    <div class="masthead-actions">
+      <nav class="lang-switch" aria-label="{{ t.lang_label }}">
+        <a href="/language/en" class="{% if locale == 'en' %}active{% endif %}" {% if locale == 'en' %}aria-current="page"{% endif %}>EN</a>
+        <a href="/language/de" class="{% if locale == 'de' %}active{% endif %}" {% if locale == 'de' %}aria-current="page"{% endif %}>DE</a>
+      </nav>
+      {% if authenticated %}
+      <form action="/logout" method="post">
+        <button type="submit" class="button-quiet">{{ t.sign_out }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">Alfslab infrastructure tools</p>
+      <h1 id="page-title">{{ t.title }}</h1>
+      <p class="subtitle">{{ t.subtitle }}</p>
+    </section>
 
     {% if upload_success %}
-    <div class="banner">
+    <div class="banner" role="status">
       <strong class="ok">{{ t.upload_success }}</strong> {{ uploaded_file }} {{ t.upload_success_detail }}
     </div>
     {% endif %}
 
     <div class="grid">
       <section class="card">
+        {% if authenticated %}
         <h2>{{ t.upload_heading }}</h2>
         <form action="/upload" method="post" enctype="multipart/form-data">
           <label for="file">{{ t.upload_label }}</label>
           <input id="file" name="file" type="file" accept=".xlsx,.xlsm" required>
           <button type="submit">{{ t.upload_button }}</button>
         </form>
-        <p class="muted" style="margin-top:1rem;font-size:.9rem;">{{ t.upload_note }}</p>
+        <p class="muted">{{ t.upload_note }}</p>
+        {% else %}
+        <h2>{{ t.admin_heading }}</h2>
+        <p class="muted">{{ t.login_note }}</p>
+        {% if login_error %}<p class="alert" role="alert">{{ t.login_error }}</p>{% endif %}
+        <form action="/login" method="post">
+          <label for="username">{{ t.username }}</label>
+          <input id="username" name="username" type="text" autocomplete="username" required>
+          <label for="password">{{ t.password }}</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <button type="submit">{{ t.sign_in }}</button>
+        </form>
+        {% endif %}
       </section>
 
       <section class="card">
@@ -212,47 +86,56 @@
       </section>
     </div>
 
-    <section class="card" style="margin-top:1rem;">
+    <section class="card card-row">
       <h2>{{ t.api_heading }}</h2>
       <table>
         <tr><th>{{ t.api_base_url }}</th><td><code>{{ api_base }}</code></td></tr>
         <tr><th>{{ t.api_user }}</th><td><code>{{ settings.api_username }}</code></td></tr>
-        <tr><th>{{ t.api_password }}</th><td><code>{{ settings.api_password }}</code></td></tr>
+        <tr>
+          <th>{{ t.api_password }}</th>
+          <td>{% if authenticated %}<code>{{ settings.api_password }}</code>{% else %}<em>{{ t.api_secret_login }}</em>{% endif %}</td>
+        </tr>
+        <tr>
+          <th>{{ t.api_session_token }}</th>
+          <td>{% if authenticated and session_token %}<code>{{ session_token }}</code>{% else %}<em>{{ t.api_secret_login }}</em>{% endif %}</td>
+        </tr>
         <tr><th>{{ t.api_session_header }}</th><td><code>vmware-api-session-id: &lt;token&gt;</code></td></tr>
         <tr><th>{{ t.api_health }}</th><td><code>{{ base_url }}/health</code></td></tr>
       </table>
     </section>
 
-    <section class="card" style="margin-top:1rem;">
-      <h2>{{ t.tls_heading }}</h2>
-      <p class="muted" style="font-size:.9rem;">{{ t.tls_note | safe }}</p>
-    </section>
-
-    <section class="card" style="margin-top:1rem;">
+    <section class="card card-row">
       <h2>{{ t.example_heading }}</h2>
       <pre># 1) Session
-curl -sk -u "{{ settings.api_username }}:{{ settings.api_password }}" \
-  -X POST "{{ api_base }}/com/vmware/cis/session"
+TOKEN=$(curl -sk -u "{{ settings.api_username }}:&lt;password&gt;" \
+  -X POST "{{ api_base }}/com/vmware/cis/session" | tr -d '"')
 
 # 2) List VMs
-curl -sk -H "vmware-api-session-id: &lt;token&gt;" \
+curl -sk -H "vmware-api-session-id: ${TOKEN}" \
   "{{ api_base }}/vcenter/vm"
 
 # 3) Power on (simulated)
-curl -sk -H "vmware-api-session-id: &lt;token&gt;" \
-  -X POST "{{ api_base }}/vcenter/vm/vm-web-01/power/start"</pre>
+curl -sk -H "vmware-api-session-id: ${TOKEN}" \
+  -X POST "{{ api_base }}/vcenter/vm/&lt;vm-id&gt;/power/start"</pre>
     </section>
 
-    <section class="card" style="margin-top:1rem;">
-      <h2>{{ t.endpoints_heading }}</h2>
-      {% for method, path, desc in t.endpoints %}
-      <div class="endpoint">
-        <span class="method">{{ method }}</span>
-        <code>{{ path }}</code>
-        <span class="muted"> — {{ desc }}</span>
-      </div>
-      {% endfor %}
+    <section class="card card-row">
+      <h2>{{ t.tls_heading }}</h2>
+      <p class="muted">{{ t.tls_note | safe }}</p>
     </section>
-  </div>
+
+    <section class="card card-row">
+      <h2>{{ t.endpoints_heading }}</h2>
+      <div class="endpoints">
+        {% for method, path, desc in t.endpoints %}
+        <div class="endpoint">
+          <span class="method">{{ method }}</span>
+          <code>{{ path }}</code>
+          <span class="muted"> — {{ desc }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
 </body>
 </html>

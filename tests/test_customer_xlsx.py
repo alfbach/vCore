@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from app.config import get_settings
 from app.parser.rvtools import parse_rvtools_xlsx
 
 CUSTOMER_XLSX = Path(__file__).resolve().parents[1] / "customer.xlsx"
@@ -60,7 +61,7 @@ def test_customer_xlsx_api_integration():
     client = TestClient(create_app())
     token = client.post(
         "/rest/com/vmware/cis/session",
-        auth=("administrator@vsphere.local", "Emulator123!"),
+        auth=(get_settings().api_username, get_settings().api_password),
     ).json()
     headers = {"vmware-api-session-id": token}
 

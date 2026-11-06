@@ -14,7 +14,7 @@ Emulates a **VMware vCenter REST API** based on an **RVtools XLSX export**. The 
 - Session authentication like vCenter (`vmware-api-session-id`)
 - **Simulated write operations**: Power On/Off/Suspend/Reset, maintenance mode, annotation
 - **Additional endpoints**: resource pools, folders, guest identity/networking
-- Concurrent access via async FastAPI + optional multiple Uvicorn workers
+- Concurrent access via async FastAPI (single worker preserves simulated state)
 - **TLS via nginx** on port **9443** (self-signed or custom certificate)
 - **OpenShift 4** deployment with Route, PVC, and UBI-based container image
 
@@ -140,7 +140,7 @@ VCENTEREMU_API_PASSWORD=Emulator123!
 VCENTEREMU_VCENTER_NAME=vcenteremu.example.com
 VCENTEREMU_HOST=0.0.0.0
 VCENTEREMU_PORT=8181
-VCENTEREMU_WORKERS=4
+VCENTEREMU_WORKERS=1
 VCENTEREMU_MAX_UPLOAD_MB=512
 ```
 
@@ -402,11 +402,12 @@ curl -sk -H "vmware-api-session-id: ${TOKEN}" \
   "https://${ROUTE}/rest/vcenter/vm" | head
 ```
 
-See the web UI at `/` for all available endpoints and credentials.
+See the web UI at `/` for all available endpoints. API passwords are never displayed.
 
 ## Notes
 
 - This is an **emulator**, not a full vCenter replacement. Write operations only change in-memory state.
+- Keep `VCENTEREMU_WORKERS=1`; sessions and simulated state are intentionally process-local.
 - A new upload replaces the inventory; simulated changes are lost in the process.
 - For production: use TLS on port **9443**, strong passwords, and a proper CA certificate.
 

@@ -14,7 +14,7 @@ async def get_version(
     _: Session = Depends(require_session),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     return {
         "value": {
             "product": settings.product_name,

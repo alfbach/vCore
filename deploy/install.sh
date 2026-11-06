@@ -150,15 +150,17 @@ if [[ -f "${REPO_ROOT}/logo.png" ]]; then
 fi
 
 # --- Environment file ---
+GENERATED_API_PASSWORD=""
 if [[ ! -f "${ENV_FILE}" ]]; then
   log "Erstelle ${ENV_FILE} ..."
+  GENERATED_API_PASSWORD="$("${PYTHON_BIN}" -c 'import secrets; print(secrets.token_urlsafe(24))')"
   cat > "${ENV_FILE}" <<EOF
 VCENTEREMU_HOST=0.0.0.0
 VCENTEREMU_PORT=8181
 VCENTEREMU_WORKERS=1
 VCENTEREMU_UPLOAD_DIR=${DATA_DIR}
 VCENTEREMU_API_USERNAME=administrator@vsphere.local
-VCENTEREMU_API_PASSWORD=Emulator123!
+VCENTEREMU_API_PASSWORD=${GENERATED_API_PASSWORD}
 VCENTEREMU_VCENTER_NAME=${HOSTNAME}
 VCENTEREMU_MAX_UPLOAD_MB=256
 EOF
@@ -310,6 +312,11 @@ echo "   systemctl status ${SERVICE_NAME}"
 echo "   sudo vcenteremu-ctl status|start|stop|restart"
 echo ""
 echo " Konfiguration: ${ENV_FILE}"
+if [[ -n "${GENERATED_API_PASSWORD}" ]]; then
+  echo " API-Benutzer: administrator@vsphere.local"
+  echo " Einmaliges API-Passwort: ${GENERATED_API_PASSWORD}"
+  echo " Bitte jetzt sicher speichern; es wird bei Updates nicht neu erzeugt."
+fi
 echo " Logs:          journalctl -u ${SERVICE_NAME} -f"
 echo "               ${LOG_DIR}/"
 echo "============================================"

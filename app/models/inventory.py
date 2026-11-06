@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from hashlib import blake2s
 from typing import Any
 
 
 def _slug(value: str) -> str:
     return "".join(ch if ch.isalnum() else "-" for ch in value.lower()).strip("-")
+
+
+def _scoped_id(prefix: str, label: str, *scope: str) -> str:
+    material = "\0".join((*scope, label)).encode("utf-8")
+    suffix = blake2s(material, digest_size=5).hexdigest()
+    return f"{prefix}-{_slug(label) or 'unknown'}-{suffix}"
 
 
 @dataclass
@@ -35,7 +42,10 @@ class VMRecord:
 
     def __post_init__(self) -> None:
         if not self.vm_id:
-            self.vm_id = f"vm-{_slug(self.name) or 'unknown'}"
+            identity = self.uuid or self.name
+            self.vm_id = _scoped_id(
+                "vm", self.name, self.datacenter, self.cluster, self.host, identity
+            )
 
 
 @dataclass
@@ -58,7 +68,7 @@ class HostRecord:
 
     def __post_init__(self) -> None:
         if not self.host_id:
-            self.host_id = f"host-{_slug(self.name) or 'unknown'}"
+            self.host_id = _scoped_id("host", self.name, self.datacenter)
 
 
 @dataclass
@@ -75,7 +85,7 @@ class ClusterRecord:
 
     def __post_init__(self) -> None:
         if not self.cluster_id:
-            self.cluster_id = f"domain-c{_slug(self.name) or 'unknown'}"
+            self.cluster_id = _scoped_id("domain-c", self.name, self.datacenter)
 
 
 @dataclass
@@ -92,7 +102,7 @@ class DatastoreRecord:
 
     def __post_init__(self) -> None:
         if not self.datastore_id:
-            self.datastore_id = f"datastore-{_slug(self.name) or 'unknown'}"
+            self.datastore_id = _scoped_id("datastore", self.name)
 
 
 @dataclass
@@ -105,8 +115,7 @@ class NetworkRecord:
 
     def __post_init__(self) -> None:
         if not self.network_id:
-            scope = _slug(self.datacenter) if self.datacenter else "global"
-            self.network_id = f"network-{_slug(self.name) or 'unknown'}-{scope}"
+            self.network_id = _scoped_id("network", self.name, self.datacenter)
 
 
 @dataclass
@@ -119,7 +128,9 @@ class ResourcePoolRecord:
 
     def __post_init__(self) -> None:
         if not self.resource_pool_id:
-            self.resource_pool_id = f"resgroup-{_slug(self.name) or 'unknown'}"
+            self.resource_pool_id = _scoped_id(
+                "resgroup", self.name, self.datacenter, self.cluster
+            )
 
 
 @dataclass
@@ -132,7 +143,7 @@ class FolderRecord:
 
     def __post_init__(self) -> None:
         if not self.folder_id:
-            self.folder_id = f"group-v{_slug(self.name) or 'unknown'}"
+            self.folder_id = _scoped_id("group-v", self.name, self.datacenter)
 
 
 @dataclass
@@ -143,7 +154,7 @@ class DatacenterRecord:
 
     def __post_init__(self) -> None:
         if not self.datacenter_id:
-            self.datacenter_id = f"datacenter-{_slug(self.name) or 'unknown'}"
+            self.datacenter_id = _scoped_id("datacenter", self.name)
 
 
 @dataclass

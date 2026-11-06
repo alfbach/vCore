@@ -17,7 +17,7 @@ def _get_host_or_404(inventory, host_id: str):
 
 @router.get("/host")
 async def list_hosts(_: Session = Depends(require_session)) -> list[dict]:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     if not inventory.is_loaded:
         raise HTTPException(status_code=503, detail="No inventory loaded")
     return [
@@ -33,7 +33,7 @@ async def list_hosts(_: Session = Depends(require_session)) -> list[dict]:
 
 @router.get("/host/{host_id}")
 async def get_host(host_id: str, _: Session = Depends(require_session)) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     host = _get_host_or_404(inventory, host_id)
     return {
         "value": {
@@ -58,14 +58,14 @@ async def get_host(host_id: str, _: Session = Depends(require_session)) -> dict:
 
 @router.get("/host/{host_id}/maintenance")
 async def get_host_maintenance(host_id: str, _: Session = Depends(require_session)) -> dict:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     host = _get_host_or_404(inventory, host_id)
     return {"value": {"maintenance_mode": host.maintenance_mode}}
 
 
 @router.post("/host/{host_id}/maintenance/enter", status_code=200)
 async def enter_maintenance(host_id: str, _: Session = Depends(require_session)) -> None:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     _get_host_or_404(inventory, host_id)
     try:
         await inventory_store.update_host_maintenance(host_id, True)
@@ -75,7 +75,7 @@ async def enter_maintenance(host_id: str, _: Session = Depends(require_session))
 
 @router.post("/host/{host_id}/maintenance/exit", status_code=200)
 async def exit_maintenance(host_id: str, _: Session = Depends(require_session)) -> None:
-    inventory = await inventory_store.get()
+    inventory = await inventory_store.view()
     _get_host_or_404(inventory, host_id)
     try:
         await inventory_store.update_host_maintenance(host_id, False)
