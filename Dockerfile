@@ -1,7 +1,11 @@
 FROM registry.access.redhat.com/ubi9/python-311:latest
 
+ARG VCS_REF=unknown
+
 LABEL maintainer="vcenteremu" \
       description="vCenter API emulator powered by RVtools XLSX exports" \
+      org.opencontainers.image.source="https://github.com/alfslab/vcenteremu" \
+      org.opencontainers.image.revision="${VCS_REF}" \
       io.k8s.display-name="vCenter Emulator" \
       io.openshift.tags="python,fastapi,vcenter,emulator"
 
