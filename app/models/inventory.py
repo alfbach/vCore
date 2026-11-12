@@ -123,13 +123,14 @@ class ResourcePoolRecord:
     name: str
     datacenter: str = ""
     cluster: str = ""
+    path: str = ""
     resource_pool_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.resource_pool_id:
             self.resource_pool_id = _scoped_id(
-                "resgroup", self.name, self.datacenter, self.cluster
+                "resgroup", self.name, self.datacenter, self.cluster, self.path
             )
 
 

@@ -43,9 +43,14 @@ def test_static_logo_available():
     from app.main import create_app
 
     client = TestClient(create_app())
-    response = client.get("/static/logo.png")
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("image/")
+    for asset in ("vcore-icon.png", "vcore-lockup.png", "vcore-title.png"):
+        response = client.get(f"/static/{asset}")
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("image/")
+
+    tokens = client.get("/static/alfslab-tokens.css")
+    assert tokens.status_code == 200
+    assert "--alfslab-brand: #c9190b" in tokens.text
 
 
 def test_dashboard_does_not_expose_api_password():
@@ -59,6 +64,7 @@ def test_dashboard_does_not_expose_api_password():
     assert f"<code>{get_settings().api_password}</code>" not in page.text
     assert f":{get_settings().api_password}&quot;" not in page.text
     assert "&lt;password&gt;" in page.text
+    assert 'action="/change-password"' not in page.text
 
 
 def test_authenticated_dashboard_reveals_password_and_session_token():
@@ -81,6 +87,10 @@ def test_authenticated_dashboard_reveals_password_and_session_token():
     assert page.status_code == 200
     assert f"<code>{settings.api_password}</code>" in page.text
     assert f"<code>{token}</code>" in page.text
+    assert 'action="/change-password"' in page.text
+    assert 'name="current_password"' in page.text
+    assert 'name="new_password"' in page.text
+    assert 'name="confirm_password"' in page.text
 
 
 def test_upload_requires_login():
@@ -223,3 +233,45 @@ def test_login_upload_sanitizes_filename_and_logout(tmp_path):
         assert denied.status_code == 401
     finally:
         settings.upload_dir = original_upload_dir
+
+
+def test_upload_size_limit_and_retention(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.config import get_settings
+    from app.main import create_app
+    from tests.test_rvtools_parser import _build_sample_workbook
+
+    settings = get_settings()
+    original_upload_dir = settings.upload_dir
+    original_max_upload_mb = settings.max_upload_mb
+    original_max_stored_uploads = settings.max_stored_uploads
+    settings.upload_dir = str(tmp_path)
+    settings.max_upload_mb = 1
+    settings.max_stored_uploads = 1
+    try:
+        client = TestClient(create_app())
+        login = client.post(
+            "/login",
+            data={"username": settings.api_username, "password": settings.api_password},
+            follow_redirects=False,
+        )
+        assert login.status_code == 303
+
+        too_large = client.post(
+            "/upload",
+            files={"file": ("large.xlsx", b"x" * (1024 * 1024 + 1))},
+        )
+        assert too_large.status_code == 413
+        assert not list(tmp_path.iterdir())
+
+        workbook = _build_sample_workbook()
+        assert client.post("/upload", files={"file": ("first.xlsx", workbook)}).status_code == 200
+        assert client.post("/upload", files={"file": ("second.xlsx", workbook)}).status_code == 200
+        saved = list(tmp_path.glob("*.xlsx"))
+        assert len(saved) == 1
+        assert saved[0].name.endswith("-second.xlsx")
+    finally:
+        settings.upload_dir = original_upload_dir
+        settings.max_upload_mb = original_max_upload_mb
+        settings.max_stored_uploads = original_max_stored_uploads

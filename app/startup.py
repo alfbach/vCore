@@ -28,7 +28,13 @@ async def bootstrap_inventory() -> None:
         return
 
     logger.info("Loading inventory from %s ...", path)
-    inventory = parse_rvtools_xlsx(path.read_bytes(), source_file=path.name)
+    inventory = parse_rvtools_xlsx(
+        path,
+        source_file=path.name,
+        max_uncompressed_bytes=settings.max_xlsx_uncompressed_mb * 1024 * 1024,
+        max_rows=settings.max_xlsx_rows,
+        max_cells=settings.max_xlsx_cells,
+    )
     await inventory_store.replace(inventory)
     logger.info(
         "Inventory loaded: %s VMs, %s hosts",

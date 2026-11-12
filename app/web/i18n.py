@@ -7,7 +7,7 @@ DEFAULT_LOCALE = "en"
 
 TRANSLATIONS: dict[str, dict[str, Any]] = {
     "en": {
-        "title": "vCenter Emulator",
+        "title": "vCore",
         "subtitle": "Upload an RVtools XLSX export and expose a vCenter-compatible REST API.",
         "upload_success": "Upload successful:",
         "upload_success_detail": "was loaded and indexed.",
@@ -84,7 +84,7 @@ TRANSLATIONS: dict[str, dict[str, Any]] = {
         ],
     },
     "de": {
-        "title": "vCenter Emulator",
+        "title": "vCore",
         "subtitle": "RVtools XLSX hochladen und eine vCenter-kompatible REST-API bereitstellen.",
         "upload_success": "Upload erfolgreich:",
         "upload_success_detail": "wurde geladen und indexiert.",

@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
-        title="vCenter Emulator",
+        title="vCore",
         description="Emulates a subset of the VMware vCenter REST API from RVtools XLSX exports.",
         version=__version__,
         lifespan=lifespan,

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Install vCenter Emulator on OpenShift 4
+# Install vCore on OpenShift 4
 #
 # Usage:
 #   ./deploy/openshift/install-openshift.sh [options]
@@ -91,7 +91,7 @@ oc rollout status deployment/vcenteremu -n "${NAMESPACE}" --timeout=300s
 ROUTE="$(oc get route vcenteremu -n "${NAMESPACE}" -o jsonpath='{.spec.host}')"
 echo ""
 echo "============================================"
-echo " vCenter Emulator on OpenShift 4"
+echo " vCore on OpenShift 4"
 echo "============================================"
 echo " Web UI:  https://${ROUTE}/"
 echo " API:     https://${ROUTE}/rest/"

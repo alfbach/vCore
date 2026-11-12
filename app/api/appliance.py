@@ -20,7 +20,7 @@ async def get_version(
             "product": settings.product_name,
             "version": inventory.product_version or settings.vcenter_version,
             "build": inventory.build or "vcenteremu",
-            "summary": "vCenter Emulator",
+            "summary": "vCore",
             "released": "2026-07-03",
             "type": "vCenter Server",
             "name": inventory.vcenter_server or settings.vcenter_name,

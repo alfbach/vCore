@@ -77,7 +77,7 @@ def verify_basic_credentials(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
-            headers={"WWW-Authenticate": "Basic realm=\"vCenter Emulator\""},
+            headers={"WWW-Authenticate": "Basic realm=\"vCore\""},
         )
     username_ok = secrets.compare_digest(credentials.username, settings.api_username)
     password_ok = secrets.compare_digest(credentials.password, settings.api_password)
@@ -85,7 +85,7 @@ def verify_basic_credentials(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic realm=\"vCenter Emulator\""},
+            headers={"WWW-Authenticate": "Basic realm=\"vCore\""},
         )
     return credentials.username
 

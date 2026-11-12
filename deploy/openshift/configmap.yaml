@@ -9,7 +9,7 @@ data:
   VCENTEREMU_PORT: "8181"
   VCENTEREMU_UPLOAD_DIR: "/var/lib/vcenteremu/uploads"
   VCENTEREMU_WORKERS: "1"
-  VCENTEREMU_API_USERNAME: "administrator@vsphere.local"
+  VCENTEREMU_API_USERNAME: "admin"
   VCENTEREMU_VCENTER_NAME: "vcenteremu.apps.example.com"
   VCENTEREMU_MAX_UPLOAD_MB: "512"
   VCENTEREMU_SESSION_TTL_SECONDS: "3600"

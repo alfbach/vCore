@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "vCenter Emulator: Dev Server",
+      "name": "vCore: Dev Server",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
@@ -19,7 +19,7 @@
       "justMyCode": true
     },
     {
-      "name": "vCenter Emulator: Pytest (all)",
+      "name": "vCore: Pytest (all)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
@@ -30,7 +30,7 @@
       "justMyCode": true
     },
     {
-      "name": "vCenter Emulator: Pytest (customer.xlsx)",
+      "name": "vCore: Pytest (customer.xlsx)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",

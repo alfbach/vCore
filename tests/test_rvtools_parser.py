@@ -1,5 +1,6 @@
 from io import BytesIO
 
+import pytest
 from openpyxl import Workbook
 
 from app.config import get_settings
@@ -171,4 +172,59 @@ def test_scoped_ids_do_not_collide_after_slug_normalization():
     first = VMRecord(name="web 01", datacenter="DC1", uuid="uuid-1")
     second = VMRecord(name="web-01", datacenter="DC1", uuid="uuid-2")
     assert first.vm_id != second.vm_id
+
+
+def test_duplicate_vm_names_use_uuid_or_scope_for_relations():
+    wb = Workbook()
+    vinfo = wb.active
+    vinfo.title = "vInfo"
+    vinfo.append(["VM", "Datacenter", "Cluster", "Host", "UUID"])
+    vinfo.append(["shared-name", "DC1", "A", "host-a", "uuid-a"])
+    vinfo.append(["shared-name", "DC2", "B", "host-b", "uuid-b"])
+
+    network = wb.create_sheet("vNetwork")
+    network.append(["VM", "Datacenter", "Network", "MAC Address"])
+    network.append(["shared-name", "DC1", "network-a", "00:00:00:00:00:0a"])
+    network.append(["shared-name", "DC2", "network-b", "00:00:00:00:00:0b"])
+
+    disk = wb.create_sheet("vDisk")
+    disk.append(["VM", "VM UUID", "Disk", "Capacity MiB"])
+    disk.append(["shared-name", "uuid-a", "disk-a", 10])
+    disk.append(["shared-name", "uuid-b", "disk-b", 20])
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    inventory = parse_rvtools_xlsx(buffer.getvalue())
+
+    vm_a = next(vm for vm in inventory.vms.values() if vm.uuid == "uuid-a")
+    vm_b = next(vm for vm in inventory.vms.values() if vm.uuid == "uuid-b")
+    assert inventory.vm_nics[vm_a.vm_id][0]["network"] == "network-a"
+    assert inventory.vm_nics[vm_b.vm_id][0]["network"] == "network-b"
+    assert inventory.vm_disks[vm_a.vm_id][0]["label"] == "disk-a"
+    assert inventory.vm_disks[vm_b.vm_id][0]["label"] == "disk-b"
+
+
+def test_resource_pools_are_scoped_by_cluster():
+    wb = Workbook()
+    vinfo = wb.active
+    vinfo.title = "vInfo"
+    vinfo.append(["VM", "Datacenter", "Cluster", "Resource Pool", "UUID"])
+    vinfo.append(["vm-a", "DC1", "A", "Resources", "uuid-a"])
+    vinfo.append(["vm-b", "DC1", "B", "Resources", "uuid-b"])
+    buffer = BytesIO()
+    wb.save(buffer)
+
+    pools = parse_rvtools_xlsx(buffer.getvalue()).resource_pools.values()
+    assert len(pools) == 2
+    assert len({pool.resource_pool_id for pool in pools}) == 2
+
+
+def test_xlsx_structural_limits_are_enforced():
+    workbook = _build_sample_workbook()
+    with pytest.raises(ValueError, match="uncompressed size"):
+        parse_rvtools_xlsx(workbook, max_uncompressed_bytes=1)
+    with pytest.raises(ValueError, match="row limit"):
+        parse_rvtools_xlsx(workbook, max_rows=1)
+    with pytest.raises(ValueError, match="cell limit"):
+        parse_rvtools_xlsx(workbook, max_cells=1)
 

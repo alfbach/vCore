@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 import secrets
 from pathlib import Path
@@ -8,6 +9,7 @@ from typing import Any
 from urllib.parse import urlparse
 from uuid import uuid4
 
+import aiofiles
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBasicCredentials
@@ -71,15 +73,31 @@ async def _active_session_token(request: Request) -> str | None:
     return token if await session_manager.validate(token) is not None else None
 
 
-async def _read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
-    chunks: list[bytes] = []
+async def _write_upload_limited(file: UploadFile, target: Path, max_bytes: int) -> None:
     total = 0
-    while chunk := await file.read(UPLOAD_CHUNK_SIZE):
-        total += len(chunk)
-        if total > max_bytes:
-            raise HTTPException(status_code=413, detail="Upload exceeds the configured size limit")
-        chunks.append(chunk)
-    return b"".join(chunks)
+    async with aiofiles.open(target, "xb") as handle:
+        while chunk := await file.read(UPLOAD_CHUNK_SIZE):
+            total += len(chunk)
+            if total > max_bytes:
+                raise HTTPException(
+                    status_code=413,
+                    detail="Upload exceeds the configured size limit",
+                )
+            await handle.write(chunk)
+
+
+def _prune_stored_uploads(upload_dir: Path, keep: int) -> None:
+    uploads = sorted(
+        (
+            path
+            for path in upload_dir.iterdir()
+            if path.is_file() and path.suffix.lower() in {".xlsx", ".xlsm"}
+        ),
+        key=lambda path: path.stat().st_mtime_ns,
+        reverse=True,
+    )
+    for expired in uploads[keep:]:
+        expired.unlink(missing_ok=True)
 
 
 def _safe_upload_name(filename: str) -> str:
@@ -211,20 +229,37 @@ async def upload_rvtools(
         raise HTTPException(status_code=400, detail="Only .xlsx or .xlsm RVtools exports are supported")
 
     max_bytes = settings.max_upload_mb * 1024 * 1024
-    content = await _read_upload_limited(file, max_bytes)
     safe_name = _safe_upload_name(file.filename)
-
-    try:
-        inventory = await asyncio.to_thread(
-            parse_rvtools_xlsx, content, source_file=safe_name
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Failed to parse RVtools file: {exc}") from exc
-
     upload_dir = Path(settings.upload_dir).resolve()
     await asyncio.to_thread(upload_dir.mkdir, parents=True, exist_ok=True)
-    target = upload_dir / f"{uuid4().hex}-{safe_name}"
-    await asyncio.to_thread(target.write_bytes, content)
+    upload_id = uuid4().hex
+    temporary = upload_dir / f".{upload_id}.uploading"
+    target = upload_dir / f"{upload_id}-{safe_name}"
+    try:
+        await _write_upload_limited(file, temporary, max_bytes)
+        inventory = await asyncio.to_thread(
+            parse_rvtools_xlsx,
+            temporary,
+            source_file=safe_name,
+            max_uncompressed_bytes=settings.max_xlsx_uncompressed_mb * 1024 * 1024,
+            max_rows=settings.max_xlsx_rows,
+            max_cells=settings.max_xlsx_cells,
+        )
+        await asyncio.to_thread(os.replace, temporary, target)
+        await asyncio.to_thread(target.chmod, 0o600)
+        await asyncio.to_thread(
+            _prune_stored_uploads,
+            upload_dir,
+            settings.max_stored_uploads,
+        )
+    except HTTPException:
+        await asyncio.to_thread(temporary.unlink, missing_ok=True)
+        raise
+    except Exception as exc:
+        await asyncio.to_thread(temporary.unlink, missing_ok=True)
+        raise HTTPException(status_code=400, detail=f"Failed to parse RVtools file: {exc}") from exc
+    finally:
+        await file.close()
 
     await inventory_store.replace(inventory)
 

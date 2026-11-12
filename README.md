@@ -1,10 +1,10 @@
-<img align="right" src="logo.png" alt="vCenter Emulator Logo" height="100" />
+<img align="right" src="app/web/static/vcore-title.png" alt="Aether vCore" height="110" />
 
-# vCenter Emulator
+# vCore
 
 Emulates a **VMware vCenter REST API** based on an **RVtools XLSX export**. The application runs on **RHEL 10** and **OpenShift 4**, provides a web interface for uploads, and serves multiple concurrent API clients.
 
-![vCenter Emulator Web UI](screen1.png)
+![vCore Web UI](screen1.png)
 
 ## Features
 
@@ -48,7 +48,7 @@ Then open **http://127.0.0.1:8181/** in your browser. If `customer.xlsx` is in t
 
 In Cursor:
 
-- **Run and Debug** → `vCenter Emulator: Dev Server`
+- **Run and Debug** → `vCore: Dev Server`
 - **Terminal → Run Task** → `dev: setup + start (Mac)` or `dev: smoke test`
 
 Smoke test (server must be running on port **8181**):
@@ -64,8 +64,7 @@ Copy `.env.example` to `.env` to customize local settings.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
+pip install -e ".[dev]"
 export VCENTEREMU_UPLOAD_DIR=./uploads
 mkdir -p uploads
 uvicorn app.main:app --host 0.0.0.0 --port 8181 --reload
@@ -135,8 +134,8 @@ Alternative wrappers: `sudo bash deploy/install-rhel10.sh` · `sudo bash deploy/
 Edit `/etc/vcenteremu/vcenteremu.env`:
 
 ```env
-VCENTEREMU_API_USERNAME=administrator@vsphere.local
-VCENTEREMU_API_PASSWORD=Emulator123!
+VCENTEREMU_API_USERNAME=admin
+VCENTEREMU_API_PASSWORD=changeme
 VCENTEREMU_VCENTER_NAME=vcenteremu.example.com
 VCENTEREMU_HOST=0.0.0.0
 VCENTEREMU_PORT=8181
@@ -181,7 +180,7 @@ curl -sk https://127.0.0.1:9443/health
 **API smoke test (HTTP):**
 
 ```bash
-TOKEN=$(curl -sk -u 'administrator@vsphere.local:Emulator123!' \
+TOKEN=$(curl -sk -u 'admin:changeme' \
   -X POST 'http://127.0.0.1:8181/rest/com/vmware/cis/session')
 curl -sk -H "vmware-api-session-id: ${TOKEN}" \
   'http://127.0.0.1:8181/rest/vcenter/vm' | head
@@ -190,7 +189,7 @@ curl -sk -H "vmware-api-session-id: ${TOKEN}" \
 **API smoke test (HTTPS with TLS):**
 
 ```bash
-TOKEN=$(curl -sk -u 'administrator@vsphere.local:Emulator123!' \
+TOKEN=$(curl -sk -u 'admin:changeme' \
   -X POST 'https://127.0.0.1:9443/rest/com/vmware/cis/session')
 curl -sk -H "vmware-api-session-id: ${TOKEN}" \
   'https://127.0.0.1:9443/rest/vcenter/vm' | head
@@ -364,7 +363,7 @@ Replace `<host>` with your server FQDN or `127.0.0.1`. Use port **8181** for HTT
 
 ```bash
 # Session
-curl -sk -u 'administrator@vsphere.local:Emulator123!' \
+curl -sk -u 'admin:changeme' \
   -X POST 'http://<host>:8181/rest/com/vmware/cis/session'
 
 # List VMs
@@ -380,7 +379,7 @@ curl -sk -H 'vmware-api-session-id: <token>' \
 
 ```bash
 # Session
-curl -sk -u 'administrator@vsphere.local:Emulator123!' \
+curl -sk -u 'admin:changeme' \
   -X POST 'https://<host>:9443/rest/com/vmware/cis/session'
 
 # List VMs
@@ -396,7 +395,7 @@ curl -sk -H 'vmware-api-session-id: <token>' \
 
 ```bash
 ROUTE=$(oc get route vcenteremu -o jsonpath='{.spec.host}')
-TOKEN=$(curl -sk -u 'administrator@vsphere.local:YourSecurePassword' \
+TOKEN=$(curl -sk -u 'admin:YourSecurePassword' \
   -X POST "https://${ROUTE}/rest/com/vmware/cis/session")
 curl -sk -H "vmware-api-session-id: ${TOKEN}" \
   "https://${ROUTE}/rest/vcenter/vm" | head
@@ -414,7 +413,7 @@ See the web UI at `/` for all available endpoints. API passwords are never displ
 ## Tests
 
 ```bash
-pip install pytest httpx
+pip install -e ".[dev]"
 pytest -q
 ```
 

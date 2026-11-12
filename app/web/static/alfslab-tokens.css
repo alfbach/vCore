@@ -1,0 +1,65 @@
+/**
+ * Alfslab Shell 1.0.0 — copied from /Users/abach/GitHub/artwork.
+ * Keep this file in sync with artwork/tokens/alfslab-tokens.css.
+ */
+:root,
+.alfslab {
+  --alfslab-brand: #c9190b;
+  --alfslab-brand-100: #f9a8a0;
+  --alfslab-brand-200: #f56b5c;
+  --alfslab-brand-300: #e03c2e;
+  --alfslab-brand-400: #c9190b;
+  --alfslab-brand-500: #a30000;
+  --alfslab-brand-subtle-100: #faeae8;
+  --alfslab-brand-subtle-200: #f5cbc6;
+  --alfslab-brand-subtle-300: #f9a8a0;
+  --alfslab-brand-subtle-400: #f56b5c;
+
+  --alfslab-surface-app: #c5cad4;
+  --alfslab-surface-app-hi: #d0d5de;
+  --alfslab-surface-app-lo: #b4bac6;
+  --alfslab-surface-menu: #aeb4c0;
+  --alfslab-surface-menu-hi: #bcc3cf;
+  --alfslab-surface-menu-lo: #9aa1af;
+  --alfslab-tile: #d8dde6;
+  --alfslab-tile-hi: #e6e9f0;
+  --alfslab-tile-lo: #c7ceda;
+
+  --alfslab-ink-shadow: rgba(40, 48, 60, 0.28);
+  --alfslab-ink-edge: rgba(70, 78, 92, 0.22);
+  --alfslab-ink-highlight: rgba(255, 255, 255, 0.8);
+
+  --alfslab-gradient-app: linear-gradient(165deg, var(--alfslab-surface-app-hi) 0%, var(--alfslab-surface-app) 45%, var(--alfslab-surface-app-lo) 100%);
+  --alfslab-gradient-menu: linear-gradient(180deg, var(--alfslab-surface-menu-hi) 0%, var(--alfslab-surface-menu) 48%, var(--alfslab-surface-menu-lo) 100%);
+  --alfslab-gradient-tile: linear-gradient(160deg, var(--alfslab-tile-hi) 0%, var(--alfslab-tile) 52%, var(--alfslab-tile-lo) 100%);
+
+  --alfslab-shadow-tile:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 1px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(70, 78, 92, 0.14),
+    inset -1px 0 0 rgba(70, 78, 92, 0.08),
+    0 2px 3px rgba(40, 48, 60, 0.08),
+    0 8px 18px -6px rgba(40, 48, 60, 0.28);
+  --alfslab-shadow-tile-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 1px 0 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(70, 78, 92, 0.16),
+    0 3px 6px rgba(40, 48, 60, 0.1),
+    0 12px 24px -8px rgba(40, 48, 60, 0.34);
+  --alfslab-shadow-masthead:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 2px 10px rgba(40, 48, 60, 0.14);
+
+  --alfslab-font: "RedHatText", "Red Hat Text", Helvetica, Arial, sans-serif;
+  --alfslab-font-display: "RedHatDisplay", "Red Hat Display", Helvetica, Arial, sans-serif;
+  --alfslab-logo-height: 2.375rem;
+  --alfslab-motion: 150ms ease;
+}
+
+.alfslab {
+  --color-brand: var(--alfslab-brand);
+  --color-surface: var(--alfslab-surface-app);
+  --color-tile: var(--alfslab-tile);
+  --shadow-elevated: var(--alfslab-shadow-tile);
+  font-family: var(--alfslab-font);
+}

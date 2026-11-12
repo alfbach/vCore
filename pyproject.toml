@@ -1,7 +1,7 @@
 [project]
-name = "vcenteremu"
+name = "vcore"
 version = "0.1.0"
-description = "vCenter API emulator powered by RVtools XLSX exports"
+description = "vCore provides a vCenter-compatible API powered by RVtools XLSX exports"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -19,6 +19,8 @@ dependencies = [
 ]
 
 [project.scripts]
+vcore = "app.main:run"
+# Backward-compatible command name for existing deployments.
 vcenteremu = "app.main:run"
 
 [build-system]

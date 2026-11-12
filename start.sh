@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Local startup: create venv, install deps, start the vCenter Emulator (macOS / Linux)
+# Local startup: create venv, install deps, start vCore (macOS / Linux)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,7 +26,6 @@ source .venv/bin/activate
 
 log "Installing dependencies ..."
 pip install -q --upgrade pip
-pip install -q -r requirements.txt
 pip install -q -e ".[dev]"
 
 mkdir -p uploads
@@ -49,7 +48,7 @@ HOST="${HOST:-127.0.0.1}"
 
 echo ""
 echo "============================================"
-echo " vCenter Emulator — local server"
+echo " vCore — local server"
 echo "============================================"
 echo " Web UI:  http://${HOST}:${PORT}/"
 echo " API:     http://${HOST}:${PORT}/rest/"

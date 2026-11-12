@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# vCenter Emulator — full RHEL 10 install script
+# vCore — full RHEL 10 install script
 # Installs OS prerequisites, application, systemd unit, and startup helper.
 #
 # Usage:
@@ -159,7 +159,7 @@ VCENTEREMU_HOST=0.0.0.0
 VCENTEREMU_PORT=8181
 VCENTEREMU_WORKERS=1
 VCENTEREMU_UPLOAD_DIR=${DATA_DIR}
-VCENTEREMU_API_USERNAME=administrator@vsphere.local
+VCENTEREMU_API_USERNAME=admin
 VCENTEREMU_API_PASSWORD=${GENERATED_API_PASSWORD}
 VCENTEREMU_VCENTER_NAME=${HOSTNAME}
 VCENTEREMU_MAX_UPLOAD_MB=256
@@ -173,7 +173,6 @@ secure_env_permissions
 log "Erstelle Python venv und installiere Abhängigkeiten ..."
 "${PYTHON_BIN}" -m venv "${APP_DIR}/.venv"
 "${APP_DIR}/.venv/bin/pip" install --upgrade pip setuptools wheel
-"${APP_DIR}/.venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
 "${APP_DIR}/.venv/bin/pip" install "${APP_DIR}"
 
 # --- Startup script + control wrapper ---
@@ -292,7 +291,7 @@ fi
 
 echo ""
 echo "============================================"
-echo " vCenter Emulator — Installation abgeschlossen"
+echo " vCore — Installation abgeschlossen"
 echo "============================================"
 if [[ "${WITH_TLS}" == true ]]; then
   echo " Web-UI:  https://${HOSTNAME}:9443/"
@@ -313,7 +312,7 @@ echo "   sudo vcenteremu-ctl status|start|stop|restart"
 echo ""
 echo " Konfiguration: ${ENV_FILE}"
 if [[ -n "${GENERATED_API_PASSWORD}" ]]; then
-  echo " API-Benutzer: administrator@vsphere.local"
+  echo " API-Benutzer: admin"
   echo " Einmaliges API-Passwort: ${GENERATED_API_PASSWORD}"
   echo " Bitte jetzt sicher speichern; es wird bei Updates nicht neu erzeugt."
 fi

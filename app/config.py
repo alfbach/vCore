@@ -10,11 +10,15 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8181
     workers: int = 1
-    api_username: str = "administrator@vsphere.local"
-    api_password: str = "Emulator123!"
+    api_username: str = "admin"
+    api_password: str = "changeme"
     allow_weak_password: bool = False
     upload_dir: str = "/var/lib/vcenteremu/uploads"
     max_upload_mb: int = 256
+    max_stored_uploads: int = 10
+    max_xlsx_uncompressed_mb: int = 1024
+    max_xlsx_rows: int = 1_000_000
+    max_xlsx_cells: int = 10_000_000
     vcenter_name: str = "vcenteremu.local"
     vcenter_version: str = "8.0.3.00000"
     product_name: str = "VMware vCenter Server"
@@ -30,6 +34,20 @@ class Settings(BaseSettings):
                 "VCENTEREMU_WORKERS must be 1 because sessions and simulated inventory state "
                 "are process-local"
             )
+        return value
+
+    @field_validator(
+        "max_upload_mb",
+        "max_stored_uploads",
+        "max_xlsx_uncompressed_mb",
+        "max_xlsx_rows",
+        "max_xlsx_cells",
+        "session_ttl_seconds",
+    )
+    @classmethod
+    def positive_limits_only(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("resource limits must be positive integers")
         return value
 
     @model_validator(mode="after")

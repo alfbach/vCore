@@ -22,7 +22,6 @@ source .venv/bin/activate
 
 log "Installing dependencies ..."
 pip install -q --upgrade pip
-pip install -q -r requirements.txt
 pip install -q -e ".[dev]"
 
 mkdir -p uploads
@@ -43,7 +42,7 @@ HOST="$(grep -E '^VCENTEREMU_HOST=' .env 2>/dev/null | cut -d= -f2- || echo 127.
 
 echo ""
 echo "============================================"
-echo " vCenter Emulator — local dev server"
+echo " vCore — local dev server"
 echo "============================================"
 echo " Web UI:  http://${HOST}:${PORT}/"
 echo " API:     http://${HOST}:${PORT}/rest/"

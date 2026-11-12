@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# vCenter Emulator — full RHEL 10 uninstall script
+# vCore — full RHEL 10 uninstall script
 # Removes systemd service, application files, nginx/TLS integration, and optionally
 # configuration, data, logs, and the service user.
 #
@@ -116,7 +116,7 @@ remove_selinux_ports() {
 
 echo ""
 echo "============================================"
-echo " vCenter Emulator — Deinstallation (RHEL 10)"
+echo " vCore — Deinstallation (RHEL 10)"
 echo "============================================"
 echo " Service:     ${SERVICE_NAME}"
 echo " App:         ${APP_DIR}"

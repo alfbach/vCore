@@ -19,6 +19,7 @@ async def list_resource_pools(_: Session = Depends(require_session)) -> list[dic
             "name": pool.name,
             "datacenter": pool.datacenter or None,
             "cluster": pool.cluster or None,
+            "path": pool.path or None,
         }
         for pool in inventory.resource_pools.values()
     ]
@@ -41,5 +42,6 @@ async def get_resource_pool(
             "name": pool.name,
             "datacenter": pool.datacenter or None,
             "cluster": pool.cluster or None,
+            "path": pool.path or None,
         }
     }

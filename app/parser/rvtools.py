@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import io
 import re
+import zipfile
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Iterator
 
 from openpyxl import load_workbook
@@ -27,6 +30,24 @@ POWER_STATE_MAP = {
     "suspended": "SUSPENDED",
 }
 
+MAX_XLSX_ARCHIVE_ENTRIES = 10_000
+
+
+@dataclass
+class _ParseLimits:
+    max_rows: int
+    max_cells: int
+    rows: int = 0
+    cells: int = 0
+
+    def consume(self, row: tuple[Any, ...]) -> None:
+        self.rows += 1
+        self.cells += len(row)
+        if self.rows > self.max_rows:
+            raise ValueError(f"XLSX exceeds the row limit ({self.max_rows})")
+        if self.cells > self.max_cells:
+            raise ValueError(f"XLSX exceeds the cell limit ({self.max_cells})")
+
 
 def _normalize_header(value: Any) -> str:
     if value is None:
@@ -34,7 +55,11 @@ def _normalize_header(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value).strip().lower())
 
 
-def _iter_sheet_rows(workbook, sheet_name: str) -> Iterator[dict[str, Any]]:
+def _iter_sheet_rows(
+    workbook,
+    sheet_name: str,
+    limits: _ParseLimits,
+) -> Iterator[dict[str, Any]]:
     if sheet_name not in workbook.sheetnames:
         return
     sheet = workbook[sheet_name]
@@ -42,8 +67,10 @@ def _iter_sheet_rows(workbook, sheet_name: str) -> Iterator[dict[str, Any]]:
     header_row = next(row_iter, None)
     if not header_row:
         return
+    limits.consume(header_row)
     headers = [_normalize_header(cell) for cell in header_row]
     for row in row_iter:
+        limits.consume(row)
         if not row or all(cell is None or str(cell).strip() == "" for cell in row):
             continue
         yield {
@@ -53,8 +80,12 @@ def _iter_sheet_rows(workbook, sheet_name: str) -> Iterator[dict[str, Any]]:
         }
 
 
-def _sheet_rows(workbook, sheet_name: str) -> list[dict[str, Any]]:
-    return list(_iter_sheet_rows(workbook, sheet_name))
+def _sheet_rows(
+    workbook,
+    sheet_name: str,
+    limits: _ParseLimits,
+) -> list[dict[str, Any]]:
+    return list(_iter_sheet_rows(workbook, sheet_name, limits))
 
 
 def _first(row: dict[str, Any], *keys: str, default: Any = "") -> Any:
@@ -114,6 +145,34 @@ def _split_list(value: Any) -> list[str]:
     return [part.strip() for part in re.split(r"[;,\n]", text) if part.strip()]
 
 
+def _resolve_vm_id(
+    row: dict[str, Any],
+    inventory: Inventory,
+    vm_ids_by_name: dict[str, list[str]],
+    vm_id_by_uuid: dict[str, str],
+) -> str | None:
+    """Resolve a relation row without guessing when VM names are ambiguous."""
+    vm_uuid = str(_first(row, "vm uuid", "instance uuid", "uuid", default="")).strip()
+    if vm_uuid and vm_uuid in vm_id_by_uuid:
+        return vm_id_by_uuid[vm_uuid]
+
+    vm_name = str(_first(row, "vm", "name", default="")).strip()
+    candidates = list(vm_ids_by_name.get(vm_name, ()))
+    for column, attribute in (
+        ("datacenter", "datacenter"),
+        ("cluster", "cluster"),
+        ("host", "host"),
+    ):
+        expected = str(_first(row, column, default="")).strip()
+        if expected:
+            candidates = [
+                vm_id
+                for vm_id in candidates
+                if getattr(inventory.vms[vm_id], attribute) == expected
+            ]
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def _ensure_datacenter(inventory: Inventory, name: str) -> DatacenterRecord:
     name = str(name or "Datacenter").strip() or "Datacenter"
     if name not in inventory.datacenters:
@@ -131,13 +190,13 @@ def _ensure_resource_pool(
     name = str(name or "").strip()
     if not name:
         return None
-    key = f"{datacenter}::{name}"
+    key = f"{datacenter}::{cluster}::{path or name}"
     if key not in inventory.resource_pools:
         inventory.resource_pools[key] = ResourcePoolRecord(
             name=name,
             datacenter=datacenter,
             cluster=cluster,
-            extra={"path": path} if path else {},
+            path=path,
         )
     return inventory.resource_pools[key]
 
@@ -170,21 +229,75 @@ def _parse_vsource(inventory: Inventory, rows: list[dict[str, Any]]) -> None:
         inventory.build = str(int(float(build))) if str(build).replace(".", "", 1).isdigit() else str(build)
 
 
-def parse_rvtools_xlsx(content: bytes, source_file: str = "upload.xlsx") -> Inventory:
-    workbook = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+def _validate_xlsx_archive(
+    source: bytes | Path,
+    max_uncompressed_bytes: int,
+) -> None:
+    archive_source = io.BytesIO(source) if isinstance(source, bytes) else source
+    try:
+        with zipfile.ZipFile(archive_source) as archive:
+            entries = archive.infolist()
+            if len(entries) > MAX_XLSX_ARCHIVE_ENTRIES:
+                raise ValueError(
+                    f"XLSX contains too many archive entries ({len(entries)})"
+                )
+            total_size = sum(entry.file_size for entry in entries)
+            if total_size > max_uncompressed_bytes:
+                raise ValueError(
+                    "XLSX uncompressed size exceeds the configured limit "
+                    f"({max_uncompressed_bytes} bytes)"
+                )
+            if any(entry.flag_bits & 0x1 for entry in entries):
+                raise ValueError("Encrypted XLSX archives are not supported")
+    except zipfile.BadZipFile as exc:
+        raise ValueError("File is not a valid XLSX archive") from exc
+
+
+def parse_rvtools_xlsx(
+    source: bytes | Path,
+    source_file: str = "upload.xlsx",
+    *,
+    max_uncompressed_bytes: int = 1024 * 1024 * 1024,
+    max_rows: int = 1_000_000,
+    max_cells: int = 10_000_000,
+) -> Inventory:
+    _validate_xlsx_archive(source, max_uncompressed_bytes)
+    workbook_source = (
+        io.BytesIO(source) if isinstance(source, bytes) else source.open("rb")
+    )
+    try:
+        workbook = load_workbook(workbook_source, read_only=True, data_only=True)
+        try:
+            return _parse_rvtools_workbook(
+                workbook,
+                source_file,
+                _ParseLimits(max_rows=max_rows, max_cells=max_cells),
+            )
+        finally:
+            workbook.close()
+    finally:
+        workbook_source.close()
+
+
+def _parse_rvtools_workbook(
+    workbook,
+    source_file: str,
+    limits: _ParseLimits,
+) -> Inventory:
     inventory = Inventory(source_file=source_file, loaded_at=datetime.now(timezone.utc))
 
-    vinfo_rows = _sheet_rows(workbook, "vInfo")
-    vhost_rows = _sheet_rows(workbook, "vHost")
-    vcluster_rows = _sheet_rows(workbook, "vCluster")
-    vdatastore_rows = _sheet_rows(workbook, "vDatastore")
-    vdisk_rows = _sheet_rows(workbook, "vDisk")
-    vsource_rows = _sheet_rows(workbook, "vSource")
-    vrp_rows = _sheet_rows(workbook, "vRP")
+    vinfo_rows = _sheet_rows(workbook, "vInfo", limits)
+    vhost_rows = _sheet_rows(workbook, "vHost", limits)
+    vcluster_rows = _sheet_rows(workbook, "vCluster", limits)
+    vdatastore_rows = _sheet_rows(workbook, "vDatastore", limits)
+    vdisk_rows = _sheet_rows(workbook, "vDisk", limits)
+    vsource_rows = _sheet_rows(workbook, "vSource", limits)
+    vrp_rows = _sheet_rows(workbook, "vRP", limits)
 
     _parse_vsource(inventory, vsource_rows)
 
-    vm_by_name: dict[str, str] = {}
+    vm_ids_by_name: dict[str, list[str]] = {}
+    vm_id_by_uuid: dict[str, str] = {}
 
     for row in vinfo_rows:
         vm_name = str(_first(row, "vm", "name", default="")).strip()
@@ -233,7 +346,9 @@ def parse_rvtools_xlsx(content: bytes, source_file: str = "upload.xlsx") -> Inve
             template=_bool(_first(row, "template", default=False)),
         )
         inventory.vms[vm.vm_id] = vm
-        vm_by_name[vm_name] = vm.vm_id
+        vm_ids_by_name.setdefault(vm_name, []).append(vm.vm_id)
+        if vm.uuid:
+            vm_id_by_uuid[vm.uuid] = vm.vm_id
         _ensure_resource_pool(inventory, vm.resource_pool, datacenter, vm.cluster)
         _ensure_folder(inventory, vm.folder, datacenter)
 
@@ -306,7 +421,7 @@ def parse_rvtools_xlsx(content: bytes, source_file: str = "upload.xlsx") -> Inve
         inventory.datastores[ds.datastore_id] = ds
 
     seen_networks: set[tuple[str, str]] = set()
-    for row in _iter_sheet_rows(workbook, "vNetwork"):
+    for row in _iter_sheet_rows(workbook, "vNetwork", limits):
         network_name = str(_first(row, "network", "port group", default="")).strip()
         datacenter = str(_first(row, "datacenter", default="Datacenter"))
         if network_name:
@@ -321,8 +436,7 @@ def parse_rvtools_xlsx(content: bytes, source_file: str = "upload.xlsx") -> Inve
                 )
                 inventory.networks[net.network_id] = net
 
-        vm_name = str(_first(row, "vm", default="")).strip()
-        vm_id = vm_by_name.get(vm_name)
+        vm_id = _resolve_vm_id(row, inventory, vm_ids_by_name, vm_id_by_uuid)
         if vm_id:
             mac = str(
                 _first(row, "mac address", "mac aeeress", "mac aeEress", default="")
@@ -338,8 +452,7 @@ def parse_rvtools_xlsx(content: bytes, source_file: str = "upload.xlsx") -> Inve
             )
 
     for row in vdisk_rows:
-        vm_name = str(_first(row, "vm", default="")).strip()
-        vm_id = vm_by_name.get(vm_name)
+        vm_id = _resolve_vm_id(row, inventory, vm_ids_by_name, vm_id_by_uuid)
         if not vm_id:
             continue
         inventory.vm_disks.setdefault(vm_id, []).append(
@@ -375,5 +488,4 @@ def parse_rvtools_xlsx(content: bytes, source_file: str = "upload.xlsx") -> Inve
         "resource_pools": len(inventory.resource_pools),
         "folders": len(inventory.folders),
     }
-    workbook.close()
     return inventory

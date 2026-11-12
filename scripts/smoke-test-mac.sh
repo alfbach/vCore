@@ -15,8 +15,8 @@ fi
 HOST="${VCENTEREMU_HOST:-127.0.0.1}"
 PORT="${VCENTEREMU_PORT:-8181}"
 BASE="http://${HOST}:${PORT}"
-USER="${VCENTEREMU_API_USERNAME:-administrator@vsphere.local}"
-PASS="${VCENTEREMU_API_PASSWORD:-Emulator123!}"
+USER="${VCENTEREMU_API_USERNAME:-admin}"
+PASS="${VCENTEREMU_API_PASSWORD:-changeme}"
 
 pass() { printf '  ✓ %s\n' "$*"; }
 fail() { printf '  ✗ %s\n' "$*" >&2; exit 1; }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# vCenter Emulator — startup / control script
+# vCore — startup / control script
 #
 # Usage:
 #   vcenteremu-ctl start|stop|restart|status|foreground
@@ -70,7 +70,7 @@ start_daemon() {
     return 0
   fi
 
-  log "Starte vCenter Emulator ..."
+  log "Starte vCore ..."
   cd "${APP_DIR}"
 
   if [[ "${EUID}" -eq 0 ]]; then
